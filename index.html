@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Higher Or Lower?!</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="hero">
+      <h1 class="app-title">Higher Or Lower?! 🎶</h1>
+      <p class="app-subtitle">
+        Press <strong>Begin Game</strong>. You’ll hear two notes. Decide whether the second note is
+        <strong>Higher</strong>, <strong>Lower</strong>, or the <strong>Same</strong> as the first.
+        <br/>Press <strong>R</strong> to replay the notes.
+      </p>
+    </header>
+
+    <section class="controlsPanel controlsPanelActions" aria-label="actions">
+      <div class="control">
+        <div class="actionsRow actionsCentered">
+          <button id="beginBtn" type="button" class="primary pulse">Begin Game</button>
+          <button id="replayBtn" type="button" disabled>Replay Notes</button>
+          <button id="nextBtn" type="button" disabled>Next</button>
+<label class="inlineControl inlineControlRow">
+            <select id="noteRange" class="compactSelect">
+              <option value="easy-1oct" selected>Note Range: 1 Octave</option>
+              <option value="med-2oct">Note Range: 2 Octave</option>
+              <option value="hard-3oct">Note Range: 3 Octaves</option>
+              <option value="expert-4oct">Note Range: 4 Octaves</option>
+            </select>
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <section class="controlsPanel controlsPanelActions" aria-label="actions">
+      <div class="control">
+        <div class="actionsRow actionsCentered">
+          <button id="higherBtn" type="button" class="primary" disabled>Higher</button>
+          <button id="sameBtn" type="button" class="primary" disabled>The Same</button>
+          <button id="lowerBtn" type="button" class="primary" disabled>Lower</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="controlsPanel controlsPanelActions" aria-label="actions">
+      <div class="control">
+        <div class="actionsRow actionsCentered">
+          <button id="downloadScoreBtn" type="button">Download Score Card!</button>
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <section class="analysis" aria-label="feedback">
+      <div class="analysisGrid feedbackGridPitch">
+        <div class="analysisCard fixedFeedbackCard">
+          <div class="analysisLabel">Feedback</div>
+          <div class="analysisBody" id="feedbackOut" aria-live="polite">Press <strong>Begin Game</strong> to start.</div>
+        </div>
+
+        <div class="analysisCard">
+          <div class="analysisLabel">Score Card</div>
+          <div class="analysisBody scoreBody" id="scoreOut">—</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="stage compactStage" aria-label="notes visual">
+      <div class="miniLegend" aria-hidden="true">
+        <span class="legendDot legendFirst"></span> First note
+        <span class="legendDot legendSecond"></span> Second note
+      </div>
+      <div id="miniMount" class="mount miniMount" aria-label="Mini keyboard"></div>
+    </section>
+
+    <footer class="endnotes"></footer>
+  </div>
+
+  <div class="modal hidden" id="streakModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modalCard">
+      <div class="modalTitle" id="modalTitle">New Longest Streak!</div>
+      <div class="modalBody" id="modalBody">—</div>
+      <div class="modalActions">
+        <button id="modalDownload" type="button">Download Record PNG</button>
+        <button id="modalClose" type="button" class="primary">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
