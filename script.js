@@ -1,7 +1,7 @@
 /* /script.js
    Higher Or Lower?! (two-note comparison)
-   - Uses same audio folder convention: audio/{stem}{octave}.mp3
-   - Preserves Squarespace iframe sizing + scroll forwarding patterns.
+   - audio/{stem}{octave}.mp3
+   - Squarespace iframe sizing + scroll forwarding preserved
 */
 (() => {
   "use strict";
@@ -16,7 +16,6 @@
 
   const FIRST_COLOR = "#4da3ff";
   const SECOND_COLOR = "#34c759";
-  const WRONG_COLOR = "#ff6b6b";
 
   const PC_TO_STEM = {
     0: "c",
@@ -36,7 +35,6 @@
   const PC_NAMES_SHARP = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
   const PC_NAMES_FLAT  = ["C","Db","D","Eb","E","F","Gb","G","Ab","A","Bb","B"];
 
-  // Same bounds as your original (C2–C6 range available).
   const RANGES = {
     "easy-1oct":   { label: "Easy (1 octave)",   startOctave: 4, octaves: 1, endOnFinalC: true },
     "med-2oct":    { label: "Medium (2 octaves)",startOctave: 3, octaves: 2, endOnFinalC: true },
@@ -71,7 +69,7 @@
     return;
   }
 
-  // ---------------- iframe sizing (kept from original approach) ----------------
+  // ---------------- iframe sizing ----------------
   let lastHeight = 0;
   const ro = new ResizeObserver((entries) => {
     for (const entry of entries) {
@@ -313,7 +311,6 @@
   function pitchFromPcOct(pc, oct) { return (oct * 12) + pc; }
   function pcFromPitch(p) { return ((p % 12) + 12) % 12; }
   function octFromPitch(p) { return Math.floor(p / 12); }
-
   function getStemForPc(pc) { return PC_TO_STEM[(pc + 12) % 12] || null; }
 
   function pitchLabel(pitch) {
@@ -374,10 +371,8 @@
     const startOct = m.startOctave;
     const octaves = m.octaves;
 
-    const startPitch = pitchFromPcOct(0, startOct); // C
-    const endPitch = pitchFromPcOct(0, startOct + octaves); // final C
-    pitchMin = startPitch;
-    pitchMax = endPitch;
+    pitchMin = pitchFromPcOct(0, startOct);
+    pitchMax = pitchFromPcOct(0, startOct + octaves);
   }
 
   function expectedAnswer(a, b) {
@@ -385,7 +380,6 @@
     return b > a ? "higher" : "lower";
   }
 
-  // Bias: strongly prefers <=1 semitone, allows up to 3, and occasionally same.
   function pickIntervalSemitones() {
     const r = Math.random();
     if (r < 0.14) return 0;
@@ -399,6 +393,7 @@
 
     const a = randomInt(pitchMin, pitchMax);
     let tries = 0;
+
     while (tries++ < 30) {
       const dist = pickIntervalSemitones();
       const dir = Math.random() < 0.5 ? -1 : 1;
@@ -462,7 +457,7 @@
     beginBtn.classList.toggle("pulse", !started);
   }
 
-  // ---------------- mini keyboard ----------------
+  // ---------------- mini keyboard (renders into #miniMount inside Feedback card) ----------------
   const SVG_NS = "http://www.w3.org/2000/svg";
 
   function el(tag, attrs = {}, children = []) {
@@ -481,31 +476,22 @@
     return m[pc] ?? null;
   }
 
-  function midiToPc(p) { return pcFromPitch(p); }
-
   function clamp(v, lo, hi) {
     return Math.max(lo, Math.min(hi, v));
   }
 
-  /**
-   * Returns a fixed 2-octave window (C→C→C) based on the question notes:
-   * - Start at the C of the octave at/below min(note1,note2)
-   * - If that doesn't include max(note1,note2) within 2 octaves, shift start up one octave
-   * - Clamp to game pitch bounds (which themselves are Cs).
-   */
   function computeTwoOctaveWindow(p1, p2) {
     const minP = Math.min(p1, p2);
     const maxP = Math.max(p1, p2);
 
-    let startC = pitchFromPcOct(0, octFromPitch(minP)); // C at/below min note
-    let endC = startC + 24; // C + 2 octaves
+    let startC = pitchFromPcOct(0, octFromPitch(minP));
+    let endC = startC + 24;
 
     if (maxP > endC) {
       startC += 12;
       endC = startC + 24;
     }
 
-    // Clamp window to overall bounds; preserve length when possible.
     if (startC < pitchMin) {
       startC = pitchMin;
       endC = startC + 24;
@@ -525,12 +511,11 @@
     miniMount.innerHTML = "";
 
     if (p1 == null || p2 == null) {
-      miniMount.innerHTML = "";
+      const s = el("svg", { width: 780, height: 128, viewBox: "0 0 780 128", preserveAspectRatio: "xMidYMid meet" });
+      miniMount.appendChild(s);
       return;
     }
-    
 
-    
     const { lo, hi } = computeTwoOctaveWindow(p1, p2);
 
     const pitches = [];
@@ -543,9 +528,9 @@
     const BORDER = 8;
     const RADIUS = 14;
 
-    const whitePitches = pitches.filter(p => whiteIndexInOctave(midiToPc(p)) != null);
+    const whitePitches = pitches.filter(p => whiteIndexInOctave(pcFromPitch(p)) != null);
     if (!whitePitches.length) {
-      const s = el("svg", { width: 10, height: 10, viewBox: "0 0 10 10" });
+      const s = el("svg", { width: 780, height: 128, viewBox: "0 0 780 128" });
       miniMount.appendChild(s);
       return;
     }
@@ -610,13 +595,10 @@
       const name = PC_NAMES_SHARP[pc] + oct;
 
       const grp = el("g", { class: "w" });
-      const rect = el("rect", { x, y: startY, width: WHITE_W, height: WHITE_H });
+      grp.appendChild(el("rect", { x, y: startY, width: WHITE_W, height: WHITE_H }));
+
       const text = el("text", { x: x + WHITE_W / 2, y: startY + WHITE_H - 12, "text-anchor": "middle", class: "lbl" });
-
-      // Label only Cs with octave to keep the diagram tidy and consistent.
       text.textContent = (pc === 0) ? name : "";
-
-      grp.appendChild(rect);
       grp.appendChild(text);
 
       if (p === p1) grp.classList.add("hl1");
@@ -625,7 +607,6 @@
       gW.appendChild(grp);
     }
 
-    // Black keys in window
     for (let p = lo; p <= hi; p++) {
       const pc = pcFromPitch(p);
       if (!isBlackPc(pc)) continue;
@@ -644,9 +625,7 @@
       const x = leftX + WHITE_W - (BLACK_W / 2);
 
       const grp = el("g", { class: "b" });
-      const rect = el("rect", { x, y: startY, width: BLACK_W, height: BLACK_H });
-
-      grp.appendChild(rect);
+      grp.appendChild(el("rect", { x, y: startY, width: BLACK_W, height: BLACK_H }));
 
       if (p === p1) grp.classList.add("hl1");
       if (p === p2) grp.classList.add("hl2");
@@ -667,7 +646,6 @@
 
     canAnswer = false;
     updateControls();
-
     stopAllNotes(0.08);
 
     const ctx = ensureAudioGraph();
@@ -706,7 +684,6 @@
     buildMiniKeyboard(null, null);
 
     setFeedback("Listen carefully…");
-    updateControls();
 
     if (autoplay) {
       await new Promise(requestAnimationFrame);
@@ -767,7 +744,6 @@
       score.correct += 1;
       score.streak += 1;
       renderScore();
-
       setFeedback(
         `Correct! ✅<br/>` +
         `First: <strong>${pitchLabel(note1)}</strong> &nbsp;→&nbsp; Second: <strong>${pitchLabel(note2)}</strong>.`
@@ -777,7 +753,6 @@
       score.streak = 0;
       considerStreakForLongestOnFail(prev);
       renderScore();
-
       setFeedback(
         `Incorrect ❌ (You chose <strong>${choice}</strong>.)<br/>` +
         `First: <strong>${pitchLabel(note1)}</strong> &nbsp;→&nbsp; Second: <strong>${pitchLabel(note2)}</strong> ` +
@@ -830,7 +805,7 @@
     startNewRound({ autoplay: true });
   }
 
-  // ---------------- PNG downloads (scorecard + record) ----------------
+  // ---------------- downloads ----------------
   function downloadBlob(blob, filename) {
     const a = document.createElement("a");
     const url = URL.createObjectURL(blob);
@@ -1032,3 +1007,4 @@
 
   init();
 })();
+

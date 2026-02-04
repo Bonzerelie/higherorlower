@@ -5,7 +5,7 @@
   --pulseRGBA: rgba(77,163,255,0.28);
   --text-max: 1000px;
 
-  --analysis-max: 670px;
+  --analysis-max: 700px; /* wider now to accommodate diagram in feedback */
 
   --firstNote:#4da3ff;
   --secondNote:#34c759;
@@ -95,6 +95,7 @@ button:disabled{opacity:.45;cursor:not-allowed;transform:none}
 }
 
 .analysis{
+  align-items: center;
   max-width: var(--analysis-max);
   margin: 10px auto 0;
   background:#fff;
@@ -105,31 +106,50 @@ button:disabled{opacity:.45;cursor:not-allowed;transform:none}
 
 .analysisGrid{display:grid;gap:10px;margin:0 auto}
 
-/* Feedback + Score side-by-side */
+/* Feedback + Score: feedback wider, score narrower */
 .feedbackGridPitch{
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1.25fr 0.75fr;
   align-items:stretch;
 }
 
 .analysisCard{
+  align-items: center;
   border:1px solid rgba(0,0,0,.2);
   border-radius:14px;
   padding:12px;
   background:#f9f9f9;
 }
 
-/* Keep layout height stable: feedback always reserves space */
-.fixedFeedbackCard{min-height:92px;}
+/* Feedback card now contains text + diagram; reserve space for both */
+.fixedFeedbackCard{
+  min-height: 240px;
+}
 
 .analysisLabel{
+  align-items: center;
   font-size:12px;
   opacity:.75;
   margin-bottom:8px;
-  font-weight:800;
+  font-weight:900;
   letter-spacing:.2px;
+  text-align:center;
 }
+
 .analysisBody{font-size:14px;line-height:1.45;word-break:break-word}
 .scoreBody{font-variant-numeric:tabular-nums}
+
+.feedbackStack{
+  align-items: center;
+  display:flex;
+  align-items: center;
+  flex-direction:column;
+  gap:8px;
+}
+
+/* Score card slightly tighter */
+.scoreCardNarrow{
+  padding:10px;
+}
 
 /* Score card: vertical stack */
 .scoreGrid{
@@ -161,17 +181,10 @@ button:disabled{opacity:.45;cursor:not-allowed;transform:none}
   font-variant-numeric:tabular-nums;
 }
 
-/* Stage */
-.stage{
-  margin-top:10px;
-  background:#fff;
-  border:1px solid rgba(0,0,0,0);
-  border-radius:16px;
-  padding:12px;
-  margin-bottom: 120px;
-}
+#feedbackOut{ text-align: center; }
 
-.compactStage{padding-top:10px}
+
+/* Mini legend + diagram inside feedback card */
 .miniLegend{
   display:flex;
   gap:12px;
@@ -180,9 +193,10 @@ button:disabled{opacity:.45;cursor:not-allowed;transform:none}
   font-size:12px;
   font-weight:800;
   opacity:.75;
-  margin-bottom:6px;
   user-select:none;
 }
+.miniLegendInCard{ margin: 0; }
+
 .legendDot{
   width:10px;height:10px;border-radius:999px;display:inline-block;margin:0 6px 0 0;
   border:1px solid rgba(0,0,0,.2);
@@ -191,16 +205,14 @@ button:disabled{opacity:.45;cursor:not-allowed;transform:none}
 .legendSecond{background:var(--secondNote)}
 
 .mount{
-  overflow-x:hidden;
-  overflow-y:hidden;
-  -webkit-overflow-scrolling: touch;
-  touch-action: pan-x;
+  overflow:hidden;
 }
 .mount svg{display:block;margin:0 auto;width:100%;height:auto;}
 
-/* Fixed-height to avoid iframe height jumps */
-.miniMount{
-  min-height:120px;
+/* Diagram area inside feedback card: fixed height so iframe doesn't jump */
+.miniMountInCard{
+  height: 128px;
+  min-height: 128px;
   display:flex;
   align-items:center;
   justify-content:center;
@@ -209,7 +221,6 @@ button:disabled{opacity:.45;cursor:not-allowed;transform:none}
 /* Keep text/UI areas narrower */
 .hero,
 .controlsPanel,
-.stage,
 .endnotes{
   max-width: var(--text-max);
   margin-left: auto;
@@ -245,74 +256,16 @@ button:disabled{opacity:.45;cursor:not-allowed;transform:none}
   .inlineControlRow{min-width:unset;width:100%}
 }
 
-/* Stack feedback + score on small screens */
-@media (max-width:760px){
+/* Stack on small screens */
+@media (max-width:820px){
   .feedbackGridPitch{ grid-template-columns: 1fr; }
+  .fixedFeedbackCard{ min-height: 260px; }
 }
 
 @media (max-width:420px){
   button{padding:0 12px;}
 }
 
-/* ===== Controls layout (centered, stacked like requested) ===== */
-.actionsGrid{
-  display:grid;
-  gap:10px;
-  justify-items:center;
-  align-items:center;
-  grid-template-columns: 1fr;
-  grid-template-areas:
-    "begin"
-    "range"
-    "replay"
-    "next"
-    "higher"
-    "same"
-    "lower"
-    "download";
-}
-
-/* Make controls a consistent width without forcing huge buttons */
-.actionsGrid > button{width: fit-content;}
-.actionsGrid > label{
-  width: min(340px, 100%);
-}
-
-/* Grid area assignments */
-.actionsBegin{ grid-area: begin; }
-.actionsRange{ grid-area: range; }
-.actionsReplay{ grid-area: replay; }
-.actionsNext{ grid-area: next; }
-.actionsHigher{ grid-area: higher; }
-.actionsSame{ grid-area: same; }
-.actionsLower{ grid-area: lower; }
-.actionsDownload{ grid-area: download; }
-
-/* On wider screens, put Begin + Range on one row, Replay + Next on one row */
-@media (min-width: 720px){
-  .actionsGrid{
-    grid-template-columns: auto auto;
-    grid-template-areas:
-      "begin   range"
-      "replay  next"
-      "higher  higher"
-      "same    same"
-      "lower   lower"
-      "download download";
-  }
-
-  /* Let the two top rows size naturally, but keep the single-column rows centered */
-  .actionsHigher,
-  .actionsSame,
-  .actionsLower,
-  .actionsDownload{
-    justify-self:center;
-  }
-
-  .actionsHigher,
-  .actionsSame,
-  .actionsLower,
-  .actionsDownload{
-    width: min(420px, 100%);
-  }
+.answerBtn{
+  width: min(100px, 100%); /* <- adjust */
 }

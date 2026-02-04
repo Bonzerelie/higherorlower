@@ -17,13 +17,13 @@
       </p>
     </header>
 
+    <!-- Controls (kept as your current structure) -->
     <section class="controlsPanel controlsPanelActions" aria-label="actions">
       <div class="control">
         <div class="actionsRow actionsCentered">
           <button id="beginBtn" type="button" class="primary pulse">Begin Game</button>
           <button id="replayBtn" type="button" disabled>Replay Notes</button>
-          <button id="nextBtn" type="button" disabled>Next</button>
-<label class="inlineControl inlineControlRow">
+          <label class="inlineControl inlineControlRow">
             <select id="noteRange" class="compactSelect">
               <option value="easy-1oct" selected>Note Range: 1 Octave</option>
               <option value="med-2oct">Note Range: 2 Octave</option>
@@ -38,9 +38,9 @@
     <section class="controlsPanel controlsPanelActions" aria-label="actions">
       <div class="control">
         <div class="actionsRow actionsCentered">
-          <button id="higherBtn" type="button" class="primary" disabled>Higher</button>
-          <button id="sameBtn" type="button" class="primary" disabled>The Same</button>
-          <button id="lowerBtn" type="button" class="primary" disabled>Lower</button>
+          <button id="lowerBtn" type="button" class="primary answerBtn" disabled>Lower</button>
+          <button id="sameBtn" type="button" class="primary answerBtn" disabled>The Same</button>
+          <button id="higherBtn" type="button" class="primary answerBtn" disabled>Higher</button>
         </div>
       </div>
     </section>
@@ -48,32 +48,38 @@
     <section class="controlsPanel controlsPanelActions" aria-label="actions">
       <div class="control">
         <div class="actionsRow actionsCentered">
+          <button id="nextBtn" type="button" disabled>Next</button>
           <button id="downloadScoreBtn" type="button">Download Score Card!</button>
-          </label>
         </div>
       </div>
     </section>
 
+
+    <!-- Feedback + Score (diagram is now inside Feedback card) -->
     <section class="analysis" aria-label="feedback">
       <div class="analysisGrid feedbackGridPitch">
         <div class="analysisCard fixedFeedbackCard">
           <div class="analysisLabel">Feedback</div>
-          <div class="analysisBody" id="feedbackOut" aria-live="polite">Press <strong>Begin Game</strong> to start.</div>
+
+          <div class="feedbackStack">
+            <div class="analysisBody" id="feedbackOut" aria-live="polite">
+              Press <strong>Begin Game</strong> to start.
+            </div>
+
+            <div class="miniLegend miniLegendInCard" aria-hidden="true">
+              <span class="legendDot legendFirst"></span> First note
+              <span class="legendDot legendSecond"></span> Second note
+            </div>
+
+            <div id="miniMount" class="mount miniMount miniMountInCard" aria-label="Mini keyboard"></div>
+          </div>
         </div>
 
-        <div class="analysisCard">
+        <div class="analysisCard scoreCardNarrow">
           <div class="analysisLabel">Score Card</div>
           <div class="analysisBody scoreBody" id="scoreOut">—</div>
         </div>
       </div>
-    </section>
-
-    <section class="stage compactStage" aria-label="notes visual">
-      <div class="miniLegend" aria-hidden="true">
-        <span class="legendDot legendFirst"></span> First note
-        <span class="legendDot legendSecond"></span> Second note
-      </div>
-      <div id="miniMount" class="mount miniMount" aria-label="Mini keyboard"></div>
     </section>
 
     <footer class="endnotes"></footer>
