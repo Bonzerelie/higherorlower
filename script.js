@@ -52,9 +52,14 @@
   const nextBtn = $("nextBtn");
   const downloadScoreBtn = $("downloadScoreBtn");
   const noteRangeSel = $("noteRange");
+  const subtitle = $("subtitle");
   const feedbackOut = $("feedbackOut");
   const scoreOut = $("scoreOut");
   const miniMount = $("miniMount");
+
+  const titleWrap = $("titleWrap");
+  const titleImgWide = $("titleImgWide");
+  const titleImgWrapped = $("titleImgWrapped");
 
   const streakModal = $("streakModal");
   const modalTitle = $("modalTitle");
@@ -67,6 +72,63 @@
     if (feedbackOut) feedbackOut.textContent = msg;
     else alert(msg);
     return;
+  }
+
+  function setSubtitleVisible(visible) {
+    if (!subtitle) return;
+    subtitle.classList.toggle("hidden", !visible);
+  }
+
+  function autoSizeSelectToContent(sel) {
+    if (!sel) return;
+
+    const opt = sel.options[sel.selectedIndex];
+    const text = opt ? opt.text : sel.value;
+
+    const measurer = document.createElement("span");
+    measurer.textContent = text;
+    measurer.style.position = "absolute";
+    measurer.style.visibility = "hidden";
+    measurer.style.whiteSpace = "pre";
+
+    const cs = window.getComputedStyle(sel);
+    measurer.style.font = cs.font;
+    measurer.style.letterSpacing = cs.letterSpacing;
+
+    document.body.appendChild(measurer);
+    const textWidth = measurer.getBoundingClientRect().width;
+    measurer.remove();
+
+    const paddingLeft = parseFloat(cs.paddingLeft) || 0;
+    const paddingRight = parseFloat(cs.paddingRight) || 0;
+    const borderLeft = parseFloat(cs.borderLeftWidth) || 0;
+    const borderRight = parseFloat(cs.borderRightWidth) || 0;
+
+    const arrowSpace = 34;
+    const w = Math.ceil(textWidth + paddingLeft + paddingRight + borderLeft + borderRight + arrowSpace);
+    sel.style.width = `${w}px`;
+  }
+
+  function setTitleMode(mode) {
+    if (!titleWrap) return;
+    titleWrap.classList.toggle("titleModeWide", mode === "wide");
+    titleWrap.classList.toggle("titleModeWrapped", mode === "wrapped");
+  }
+
+  function computeDesiredWideWidthPx() {
+    const cssMax = 600;
+    const natural = titleImgWide?.naturalWidth || cssMax;
+    return Math.min(cssMax, natural);
+  }
+
+  function updateTitleForWidth() {
+    if (!titleWrap || !titleImgWide || !titleImgWrapped) return;
+
+    const available = Math.floor(titleWrap.getBoundingClientRect().width);
+    const desiredWide = computeDesiredWideWidthPx();
+
+    if (available + 1 < desiredWide) setTitleMode("wrapped");
+    else setTitleMode("wide");
   }
 
   // ---------------- iframe sizing ----------------
@@ -449,7 +511,9 @@
     sameBtn.disabled = answerDisabled;
     lowerBtn.disabled = answerDisabled;
 
-    nextBtn.disabled = !started || !awaitingNext;
+    const nextReady = started && awaitingNext;
+    nextBtn.disabled = !nextReady;
+    nextBtn.classList.toggle("nextReady", nextReady);
   }
 
   function updateBeginButton() {
@@ -457,7 +521,7 @@
     beginBtn.classList.toggle("pulse", !started);
   }
 
-  // ---------------- mini keyboard (renders into #miniMount inside Feedback card) ----------------
+  // ---------------- mini keyboard ----------------
   const SVG_NS = "http://www.w3.org/2000/svg";
 
   function el(tag, attrs = {}, children = []) {
@@ -770,10 +834,34 @@
     await startNewRound({ autoplay: true });
   }
 
+  function resetToLoadingScreen() {
+    stopAllNotes(0.08);
+
+    started = false;
+    awaitingNext = false;
+    canAnswer = false;
+
+    note1 = null;
+    note2 = null;
+
+    score.asked = 0;
+    score.correct = 0;
+    score.streak = 0;
+    score.longestStored = 0;
+
+    renderScore();
+    updateBeginButton();
+    setSubtitleVisible(true);
+    buildMiniKeyboard(null, null);
+    setFeedback("Press <strong>Begin Game</strong> to start.");
+    updateControls();
+  }
+
   async function beginGame() {
     await resumeAudioIfNeeded();
 
     started = true;
+    setSubtitleVisible(false);
     updateBeginButton();
 
     score.asked = 0;
@@ -783,26 +871,6 @@
     renderScore();
 
     await startNewRound({ autoplay: true });
-  }
-
-  function restartGame() {
-    stopAllNotes(0.08);
-
-    score.asked = 0;
-    score.correct = 0;
-    score.streak = 0;
-    score.longestStored = 0;
-    renderScore();
-
-    awaitingNext = false;
-    canAnswer = false;
-    note1 = null;
-    note2 = null;
-
-    buildMiniKeyboard(null, null);
-    setFeedback("Restarted. Press <strong>Replay Notes</strong> or <strong>Begin Game</strong> to play.");
-
-    startNewRound({ autoplay: true });
   }
 
   // ---------------- downloads ----------------
@@ -954,7 +1022,7 @@
   function bind() {
     beginBtn.addEventListener("click", async () => {
       if (!started) await beginGame();
-      else restartGame();
+      else resetToLoadingScreen();
     });
 
     replayBtn.addEventListener("click", replay);
@@ -971,9 +1039,15 @@
     modalDownload?.addEventListener("click", onDownloadRecord);
 
     noteRangeSel.addEventListener("change", () => {
+      autoSizeSelectToContent(noteRangeSel);
       computePitchBounds();
       buildMiniKeyboard(null, null);
       if (started) startNewRound({ autoplay: true });
+    });
+
+    window.addEventListener("resize", () => {
+      autoSizeSelectToContent(noteRangeSel);
+      updateTitleForWidth();
     });
 
     document.addEventListener("keydown", async (e) => {
@@ -995,16 +1069,37 @@
     });
   }
 
+  function initTitleSwap() {
+    if (!titleWrap || !titleImgWide || !titleImgWrapped) return;
+
+    const tryUpdate = () => updateTitleForWidth();
+
+    if (titleImgWide.complete) tryUpdate();
+    else titleImgWide.addEventListener("load", tryUpdate, { once: true });
+
+    if (titleImgWrapped.complete) tryUpdate();
+    else titleImgWrapped.addEventListener("load", tryUpdate, { once: true });
+
+    const tro = new ResizeObserver(() => updateTitleForWidth());
+    tro.observe(titleWrap);
+  }
+
   function init() {
     bind();
+    initTitleSwap();
+
     computePitchBounds();
     renderScore();
     updateBeginButton();
     buildMiniKeyboard(null, null);
+
     setFeedback("Press <strong>Begin Game</strong> to start.");
+    setSubtitleVisible(true);
+
     updateControls();
+    autoSizeSelectToContent(noteRangeSel);
+    updateTitleForWidth();
   }
 
   init();
 })();
-

@@ -9,22 +9,36 @@
 <body>
   <div class="app">
     <header class="hero">
-      <h1 class="app-title">Higher Or Lower?! 🎶</h1>
-      <p class="app-subtitle">
+      <div class="app-titleWrap titleModeWide" id="titleWrap" aria-label="Higher Or Lower?!">
+        <img
+          class="app-titleImg app-titleImgWide"
+          id="titleImgWide"
+          src="images/title.png"
+          alt="Higher Or Lower?!"
+        />
+        <img
+          class="app-titleImg app-titleImgWrapped"
+          id="titleImgWrapped"
+          src="images/titlewrapped.png"
+          alt="Higher Or Lower?!"
+        />
+      </div>
+
+      <p class="app-subtitle" id="subtitle">
         Press <strong>Begin Game</strong>. You’ll hear two notes. Decide whether the second note is
         <strong>Higher</strong>, <strong>Lower</strong>, or the <strong>Same</strong> as the first.
-        <br/>Press <strong>R</strong> to replay the notes.
+        <br/>Press <strong>R</strong> to replay the notes, ⬆️ for higher, ⬇️ for lower, ➡️ for the same, and <strong>Space</strong> for next.
       </p>
     </header>
 
-    <!-- Controls (kept as your current structure) -->
     <section class="controlsPanel controlsPanelActions" aria-label="actions">
       <div class="control">
         <div class="actionsRow actionsCentered">
           <button id="beginBtn" type="button" class="primary pulse">Begin Game</button>
           <button id="replayBtn" type="button" disabled>Replay Notes</button>
-          <label class="inlineControl inlineControlRow">
-            <select id="noteRange" class="compactSelect">
+
+          <label class="inlineControl inlineControlRow inlineControlRowAuto">
+            <select id="noteRange" class="compactSelect compactSelectAuto" aria-label="Note Range">
               <option value="easy-1oct" selected>Note Range: 1 Octave</option>
               <option value="med-2oct">Note Range: 2 Octave</option>
               <option value="hard-3oct">Note Range: 3 Octaves</option>
@@ -54,8 +68,6 @@
       </div>
     </section>
 
-
-    <!-- Feedback + Score (diagram is now inside Feedback card) -->
     <section class="analysis" aria-label="feedback">
       <div class="analysisGrid feedbackGridPitch">
         <div class="analysisCard fixedFeedbackCard">
