@@ -55,6 +55,7 @@
       <div class="control">
         <div class="actionsRow actionsCentered">
           <button id="nextBtn" type="button" disabled>Next</button>
+          <button id="infoBtn" type="button">Info / Help</button>
         </div>
       </div>
     </section>
@@ -112,8 +113,9 @@
       </div>
       <div class="modalTitle" id="introTitle">How to Play</div>
       <div class="modalBody">
-        <p>This game is designed to test your pitch memory and relative pitch recognition. You'll hear two notes played back-to-back. Determine if the second note is <strong>Higher</strong>, <strong>Lower</strong>, or the <strong>Same</strong> as the first.</p>
+        <p>This game is designed to see if you can recognise semitone changes in pitch, and whether we are moving up, or down in pitch. This is the fundamental skill in relative pitch, as we compare two notes and their relationships to one another. You'll hear two notes played back-to-back. Determine if the second note is <strong>Higher</strong>, <strong>Lower</strong>, or the <strong>Same</strong> as the first.</p>
         <p>Use the answer buttons, or use the arrow keys (⬆️ for higher, ⬇️ for lower, ➡️ for the same). Press <strong>'R'</strong> to replay the notes, and <strong>Space</strong> for the next note. Adjust the difficulty anytime via <strong>Game Settings</strong>.</p>
+        <p>You can also download a score card .png to track your progress over time!</p>
       </div>
       <div class="modalActions modalActionsCentered" style="margin-bottom: 2px;">
         <button class="primary pulse" id="introBeginBtn" type="button">Continue To Game</button>
@@ -139,6 +141,20 @@
       <div class="modalActions">
         <button class="confirmPrimary" id="settingsRestartBtn" type="button" disabled>Restart Game With New Settings</button>
         <button id="settingsCancelBtn" type="button">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div aria-labelledby="infoTitle" aria-modal="true" class="modal hidden" id="infoModal" role="dialog">
+    <div class="modalCard">
+      <div class="modalTitle" id="infoTitle">How To Play</div>
+      <div class="modalBody" id="infoBody">
+        <p>This game is designed to see if you can recognise semitone changes in pitch, and whether we are moving up, or down in pitch. This is the fundamental skill in relative pitch, as we compare two notes and their relationships to one another. You'll hear two notes played back-to-back. Determine if the second note is <strong>Higher</strong>, <strong>Lower</strong>, or the <strong>Same</strong> as the first.</p>
+        <p>Use the answer buttons, or use the arrow keys (⬆️ for higher, ⬇️ for lower, ➡️ for the same). Press <strong>'R'</strong> to replay the notes, and <strong>Space</strong> for the next note. Adjust the difficulty anytime via <strong>Game Settings</strong>.</p>
+        <p>You can also download a score card .png to track your progress over time!</p>
+        <div class="modalActions">
+          <button class="primary" id="infoClose" type="button">Close</button>
+        </div>
       </div>
     </div>
   </div>
