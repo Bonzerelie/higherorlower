@@ -24,7 +24,7 @@
         />
       </div>
 
-      <p class="app-subtitle" id="subtitle">
+      <p class="app-subtitle hidden" id="subtitle">
         Press <strong>Begin Game</strong>. You’ll hear two notes. Decide whether the second note is
         <strong>Higher</strong>, <strong>Lower</strong>, or the <strong>Same</strong> as the first.
         <br/>Press <strong>R</strong> to replay the notes, ⬆️ for higher, ⬇️ for lower, ➡️ for the same, and <strong>Space</strong> for next.
@@ -34,17 +34,9 @@
     <section class="controlsPanel controlsPanelActions" aria-label="actions">
       <div class="control">
         <div class="actionsRow actionsCentered">
-          <button id="beginBtn" type="button" class="primary pulse">Begin Game</button>
+          <button id="settingsBtn" type="button">Game Settings</button>
           <button id="replayBtn" type="button" disabled>Replay Notes</button>
-
-          <label class="inlineControl inlineControlRow inlineControlRowAuto">
-            <select id="noteRange" class="compactSelect compactSelectAuto" aria-label="Note Range">
-              <option value="easy-1oct" selected>Note Range: 1 Octave</option>
-              <option value="med-2oct">Note Range: 2 Octave</option>
-              <option value="hard-3oct">Note Range: 3 Octaves</option>
-              <option value="expert-4oct">Note Range: 4 Octaves</option>
-            </select>
-          </label>
+          <button id="beginBtn" type="button" class="primary pulse">Begin Game</button>
         </div>
       </div>
     </section>
@@ -63,7 +55,6 @@
       <div class="control">
         <div class="actionsRow actionsCentered">
           <button id="nextBtn" type="button" disabled>Next</button>
-          <button id="downloadScoreBtn" type="button">Download Score Card!</button>
         </div>
       </div>
     </section>
@@ -89,7 +80,15 @@
 
         <div class="analysisCard scoreCardNarrow">
           <div class="analysisLabel">Score Card</div>
-          <div class="analysisBody scoreBody" id="scoreOut">—</div>
+          <div class="scoreMeta" id="scoreMeta">Game mode: —</div>
+
+          <div class="scoreActions" style="margin-bottom: 16px;">
+            <input id="playerNameInput" type="text" inputmode="text" autocomplete="name" maxlength="32" placeholder="Click to enter your name" />
+            <button id="downloadScoreBtn" type="button">Download Scorecard</button>
+          </div>
+
+          <div class="scoreGrid scoreGridVertical" id="scoreOut">
+            </div>
         </div>
       </div>
     </section>
@@ -97,13 +96,93 @@
     <footer class="endnotes"></footer>
   </div>
 
-  <div class="modal hidden" id="streakModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div aria-labelledby="introTitle" aria-modal="true" class="modal" id="introModal" role="dialog">
     <div class="modalCard">
-      <div class="modalTitle" id="modalTitle">New Longest Streak!</div>
-      <div class="modalBody" id="modalBody">—</div>
+      <img class="app-titleImg" src="images/title.png" style="margin: 0 auto;">
+      <div style="display: flex; justify-content: center; gap: 24px; margin-top: 16px; margin-bottom: 8px; flex-wrap: wrap;">
+        <div class="inlineControl">
+          <div class="settingsLabel">Note Range</div>
+          <select aria-label="Select note range for the game" class="compactSelect compactSelectAuto" id="introRangeSelect">
+            <option value="easy-1oct" selected>1 Octave</option>
+            <option value="med-2oct">2 Octaves</option>
+            <option value="hard-3oct">3 Octaves</option>
+            <option value="expert-4oct">4 Octaves</option>
+          </select>
+        </div>
+      </div>
+      <div class="modalTitle" id="introTitle">How to Play</div>
+      <div class="modalBody">
+        <p>This game is designed to test your pitch memory and relative pitch recognition. You'll hear two notes played back-to-back. Determine if the second note is <strong>Higher</strong>, <strong>Lower</strong>, or the <strong>Same</strong> as the first.</p>
+        <p>Use the answer buttons, or use the arrow keys (⬆️ for higher, ⬇️ for lower, ➡️ for the same). Press <strong>'R'</strong> to replay the notes, and <strong>Space</strong> for the next note. Adjust the difficulty anytime via <strong>Game Settings</strong>.</p>
+      </div>
+      <div class="modalActions modalActionsCentered" style="margin-bottom: 2px;">
+        <button class="primary pulse" id="introBeginBtn" type="button">Continue To Game</button>
+      </div>
+    </div>
+  </div>
+
+  <div aria-labelledby="settingsTitle" aria-modal="true" class="modal hidden" id="settingsModal" role="dialog">
+    <div class="modalCard">
+      <div class="modalTitle" id="settingsTitle">Game Settings ⚙️</div>
+      <div class="modalBody">
+        <p style="margin:0 0 12px;">Choose your note range difficulty. Note, applying new settings will restart the game and reset the score!</p>
+        <div class="settingsGrid">
+          <div class="settingsLabel">Note Range</div>
+          <select aria-label="Select note range for the game" class="compactSelect compactSelectAuto" id="settingsRangeSelect">
+            <option value="easy-1oct">1 Octave</option>
+            <option value="med-2oct">2 Octaves</option>
+            <option value="hard-3oct">3 Octaves</option>
+            <option value="expert-4oct">4 Octaves</option>
+          </select>
+        </div>
+      </div>
       <div class="modalActions">
-        <button id="modalDownload" type="button">Download Record PNG</button>
-        <button id="modalClose" type="button" class="primary">Close</button>
+        <button class="confirmPrimary" id="settingsRestartBtn" type="button" disabled>Restart Game With New Settings</button>
+        <button id="settingsCancelBtn" type="button">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div aria-labelledby="scoreModalTitle" aria-modal="true" class="modal hidden" id="scoreModal" role="dialog">
+    <div class="modalCard">
+      <div class="modalTitle" id="scoreModalTitle" style="margin-bottom: 16px;">Current game ended - here's your scorecard!</div>
+      <div class="modalBody">
+        <div class="analysisGrid" style="width: 100%;">
+          <div class="analysisCard scoreCardNarrow">
+            <div class="analysisLabel">Score Card</div>
+            <div class="scoreMeta" id="modalScoreMeta">Game mode: —</div>
+
+            <div class="scoreActions" style="margin-bottom: 16px;">
+              <input id="modalPlayerNameInput" type="text" inputmode="text" autocomplete="name" maxlength="32" placeholder="Click to enter your name" />
+              <button id="modalDownloadScorecardBtn" type="button">Download Scorecard</button>
+            </div>
+
+            <div class="scoreGrid scoreGridVertical">
+              <div class="scoreItem"><span class="scoreK">Questions asked</span><span class="scoreV" id="modalAsked">0</span></div>
+              <div class="scoreItem"><span class="scoreK">Answers correct</span><span class="scoreV" id="modalCorrect">0</span></div>
+              <div class="scoreItem"><span class="scoreK">Correct in a row</span><span class="scoreV" id="modalStreak">0</span></div>
+              <div class="scoreItem"><span class="scoreK">Longest correct streak</span><span class="scoreV" id="modalLongest">0</span></div>
+              <div class="scoreItem"><span class="scoreK">Percentage correct</span><span class="scoreV" id="modalPercent">0.0%</span></div>
+            </div>
+            
+            <div class="scoreFooter">Higher Or Lower?!</div>
+
+          </div>
+        </div>
+      </div>
+      <div class="modalActions modalActionsCentered" style="margin-top: 16px;">
+        <button class="primary pulse" id="scoreModalContinueBtn" type="button">Continue</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal hidden" id="streakModal" role="dialog" aria-modal="true" aria-labelledby="modalTitleRecord">
+    <div class="modalCard">
+      <div class="modalTitle" id="modalTitleRecord">New Longest Streak!</div>
+      <div class="modalBody" id="modalBodyRecord">—</div>
+      <div class="modalActions">
+        <button id="modalDownloadRecord" type="button">Download Record PNG</button>
+        <button id="modalCloseRecord" type="button" class="primary">Close</button>
       </div>
     </div>
   </div>

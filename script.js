@@ -1,45 +1,39 @@
 /* /script.js
    Higher Or Lower?! (two-note comparison)
    - audio/{stem}{octave}.mp3
-   - Squarespace iframe sizing + scroll forwarding preserved
 */
 (() => {
   "use strict";
 
   const AUDIO_DIR = "audio";
+  const LS_KEY_NAME = "hol_player_name";
+
+  // UI Sounds
+  const UI_SND_SELECT = "select1.mp3";
+  const UI_SND_BACK = "back1.mp3";
+  const UI_SND_CORRECT = "correct1.mp3";
+  const UI_SND_INCORRECT = "incorrect1.mp3";
 
   const NOTE_PLAY_SEC = 1.2;
   const FADE_OUT_SEC = 0.1;
   const GAP_SEC = 0.01;
 
-  const LIMITER_THRESHOLD_DB = -6;
-
   const FIRST_COLOR = "#4da3ff";
   const SECOND_COLOR = "#34c759";
 
   const PC_TO_STEM = {
-    0: "c",
-    1: "csharp",
-    2: "d",
-    3: "dsharp",
-    4: "e",
-    5: "f",
-    6: "fsharp",
-    7: "g",
-    8: "gsharp",
-    9: "a",
-    10: "asharp",
-    11: "b",
+    0: "c", 1: "csharp", 2: "d", 3: "dsharp", 4: "e", 5: "f",
+    6: "fsharp", 7: "g", 8: "gsharp", 9: "a", 10: "asharp", 11: "b",
   };
 
   const PC_NAMES_SHARP = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
   const PC_NAMES_FLAT  = ["C","Db","D","Eb","E","F","Gb","G","Ab","A","Bb","B"];
 
   const RANGES = {
-    "easy-1oct":   { label: "Easy (1 octave)",   startOctave: 4, octaves: 1, endOnFinalC: true },
-    "med-2oct":    { label: "Medium (2 octaves)",startOctave: 3, octaves: 2, endOnFinalC: true },
-    "hard-3oct":   { label: "Hard (3 octaves)",  startOctave: 3, octaves: 3, endOnFinalC: true },
-    "expert-4oct": { label: "Expert (4 octaves)",startOctave: 2, octaves: 4, endOnFinalC: true },
+    "easy-1oct":   { label: "1 Octave",   startOctave: 4, octaves: 1 },
+    "med-2oct":    { label: "2 Octaves",  startOctave: 3, octaves: 2 },
+    "hard-3oct":   { label: "3 Octaves",  startOctave: 3, octaves: 3 },
+    "expert-4oct": { label: "4 Octaves",  startOctave: 2, octaves: 4 },
   };
 
   const $ = (id) => document.getElementById(id);
@@ -50,8 +44,10 @@
   const sameBtn = $("sameBtn");
   const lowerBtn = $("lowerBtn");
   const nextBtn = $("nextBtn");
+  
+  const settingsBtn = $("settingsBtn");
   const downloadScoreBtn = $("downloadScoreBtn");
-  const noteRangeSel = $("noteRange");
+  
   const subtitle = $("subtitle");
   const feedbackOut = $("feedbackOut");
   const scoreOut = $("scoreOut");
@@ -61,13 +57,34 @@
   const titleImgWide = $("titleImgWide");
   const titleImgWrapped = $("titleImgWrapped");
 
-  const streakModal = $("streakModal");
-  const modalTitle = $("modalTitle");
-  const modalBody = $("modalBody");
-  const modalClose = $("modalClose");
-  const modalDownload = $("modalDownload");
+  // Modals & Inputs
+  const introModal = $("introModal");
+  const introBeginBtn = $("introBeginBtn");
+  const introRangeSelect = $("introRangeSelect");
 
-  if (!beginBtn || !replayBtn || !higherBtn || !sameBtn || !lowerBtn || !nextBtn || !downloadScoreBtn || !noteRangeSel || !feedbackOut || !scoreOut || !miniMount) {
+  const settingsModal = $("settingsModal");
+  const settingsRangeSelect = $("settingsRangeSelect");
+  const settingsRestartBtn = $("settingsRestartBtn");
+  const settingsCancelBtn = $("settingsCancelBtn");
+
+  const scoreModal = $("scoreModal");
+  const scoreModalContinueBtn = $("scoreModalContinueBtn");
+  const modalDownloadScorecardBtn = $("modalDownloadScorecardBtn");
+  
+  const streakModal = $("streakModal");
+  const modalTitleRecord = $("modalTitleRecord");
+  const modalBodyRecord = $("modalBodyRecord");
+  const modalCloseRecord = $("modalCloseRecord");
+  const modalDownloadRecord = $("modalDownloadRecord");
+
+  const scoreMeta = $("scoreMeta");
+  const modalScoreMeta = $("modalScoreMeta");
+  const playerNameInput = $("playerNameInput");
+  const modalPlayerNameInput = $("modalPlayerNameInput");
+  
+  let currentModeKey = "easy-1oct";
+
+  if (!beginBtn || !replayBtn || !higherBtn || !sameBtn || !lowerBtn || !nextBtn || !downloadScoreBtn || !feedbackOut || !scoreOut || !miniMount) {
     const msg = "UI mismatch: required elements missing. Ensure index.html matches script.js ids.";
     if (feedbackOut) feedbackOut.textContent = msg;
     else alert(msg);
@@ -77,36 +94,6 @@
   function setSubtitleVisible(visible) {
     if (!subtitle) return;
     subtitle.classList.toggle("hidden", !visible);
-  }
-
-  function autoSizeSelectToContent(sel) {
-    if (!sel) return;
-
-    const opt = sel.options[sel.selectedIndex];
-    const text = opt ? opt.text : sel.value;
-
-    const measurer = document.createElement("span");
-    measurer.textContent = text;
-    measurer.style.position = "absolute";
-    measurer.style.visibility = "hidden";
-    measurer.style.whiteSpace = "pre";
-
-    const cs = window.getComputedStyle(sel);
-    measurer.style.font = cs.font;
-    measurer.style.letterSpacing = cs.letterSpacing;
-
-    document.body.appendChild(measurer);
-    const textWidth = measurer.getBoundingClientRect().width;
-    measurer.remove();
-
-    const paddingLeft = parseFloat(cs.paddingLeft) || 0;
-    const paddingRight = parseFloat(cs.paddingRight) || 0;
-    const borderLeft = parseFloat(cs.borderLeftWidth) || 0;
-    const borderRight = parseFloat(cs.borderRightWidth) || 0;
-
-    const arrowSpace = 34;
-    const w = Math.ceil(textWidth + paddingLeft + paddingRight + borderLeft + borderRight + arrowSpace);
-    sel.style.width = `${w}px`;
   }
 
   function setTitleMode(mode) {
@@ -131,7 +118,7 @@
     else setTitleMode("wide");
   }
 
-  // ---------------- iframe sizing ----------------
+  // ---------------- iframe sizing & scrolling ----------------
   let lastHeight = 0;
   const ro = new ResizeObserver((entries) => {
     for (const entry of entries) {
@@ -174,26 +161,17 @@
     const isInteractiveTarget = (t) =>
       t instanceof Element && !!t.closest("button, a, input, select, textarea, label");
 
-    let startX = 0;
-    let startY = 0;
-    let lastY = 0;
-    let lockedMode = null;
-
-    let lastMoveTs = 0;
-    let vScrollTop = 0;
+    let startX = 0, startY = 0, lastY = 0, lockedMode = null, lastMoveTs = 0, vScrollTop = 0;
 
     window.addEventListener("touchstart", (e) => {
       if (!e.touches || e.touches.length !== 1) return;
       const t = e.target;
-
       lockedMode = null;
       startX = e.touches[0].clientX;
       startY = e.touches[0].clientY;
       lastY = startY;
-
       lastMoveTs = e.timeStamp || performance.now();
       vScrollTop = 0;
-
       if (isInteractiveTarget(t)) lockedMode = "x";
     }, { passive: true });
 
@@ -203,7 +181,6 @@
 
       const x = e.touches[0].clientX;
       const y = e.touches[0].clientY;
-
       const dx = x - startX;
       const dy = y - startY;
 
@@ -220,7 +197,6 @@
 
       const fingerStep = (y - lastY) * SCROLL_GAIN;
       lastY = y;
-
       const scrollTopDelta = -fingerStep;
       const instV = scrollTopDelta / dt;
       vScrollTop = vScrollTop * 0.75 + instV * 0.25;
@@ -240,7 +216,6 @@
 
     window.addEventListener("touchend", endGesture, { passive: true });
     window.addEventListener("touchcancel", endGesture, { passive: true });
-
     window.addEventListener("wheel", (e) => {
       if (isVerticallyScrollable()) return;
       parent.postMessage({ scrollTopDelta: e.deltaY }, "*");
@@ -251,34 +226,32 @@
   // ---------------- audio ----------------
   let audioCtx = null;
   let masterGain = null;
-  let limiter = null;
 
   const bufferPromiseCache = new Map();
   const activeVoices = new Set();
+  const activeUiAudios = new Set();
+  let synthFallbackWarned = false;
 
   function ensureAudioGraph() {
     if (audioCtx) return audioCtx;
 
     const Ctx = window.AudioContext || window.webkitAudioContext;
-    if (!Ctx) {
-      alert("Your browser doesn’t support Web Audio (required for playback).");
-      return null;
-    }
+    if (!Ctx) return null;
 
     audioCtx = new Ctx();
 
     masterGain = audioCtx.createGain();
     masterGain.gain.value = 0.9;
 
-    limiter = audioCtx.createDynamicsCompressor();
-    limiter.threshold.value = LIMITER_THRESHOLD_DB;
-    limiter.knee.value = 0;
-    limiter.ratio.value = 20;
-    limiter.attack.value = 0.001;
-    limiter.release.value = 0.12;
+    const compressor = audioCtx.createDynamicsCompressor();
+    compressor.threshold.value = -10;   
+    compressor.knee.value = 12;         
+    compressor.ratio.value = 12;        
+    compressor.attack.value = 0.002;    
+    compressor.release.value = 0.25;
 
-    masterGain.connect(limiter);
-    limiter.connect(audioCtx.destination);
+    masterGain.connect(compressor);
+    compressor.connect(audioCtx.destination);
 
     return audioCtx;
   }
@@ -296,16 +269,17 @@
     if (!ctx) return;
 
     const now = ctx.currentTime;
-    const fade = Math.max(0.02, Number.isFinite(fadeSec) ? fadeSec : 0.06);
+    const fade = Math.max(0.01, Number.isFinite(fadeSec) ? fadeSec : 0.05);
 
-    for (const v of Array.from(activeVoices)) {
+    activeVoices.forEach((v) => {
       try {
         v.gain.gain.cancelScheduledValues(now);
-        v.gain.gain.setTargetAtTime(0, now, fade / 6);
-        const stopAt = Math.max(now + fade, (v.startTime || now) + 0.001);
-        v.src.stop(stopAt + 0.02);
-      } catch {}
-    }
+        v.gain.gain.setValueAtTime(v.gain.gain.value, now);
+        v.gain.gain.exponentialRampToValueAtTime(0.0001, now + fade);
+        v.src.stop(now + fade + 0.05);
+      } catch (e) {}
+    });
+    activeVoices.clear();
   }
 
   function trackVoice(src, gain, startTime) {
@@ -325,7 +299,6 @@
     const p = (async () => {
       const ctx = ensureAudioGraph();
       if (!ctx) return null;
-
       try {
         const res = await fetch(url);
         if (!res.ok) return null;
@@ -375,6 +348,76 @@
   function octFromPitch(p) { return Math.floor(p / 12); }
   function getStemForPc(pc) { return PC_TO_STEM[(pc + 12) % 12] || null; }
 
+  function pitchToFrequency(pitch) {
+    const A4 = pitchFromPcOct(9, 4);
+    return 440 * Math.pow(2, (pitch - A4) / 12);
+  }
+
+  function playSynthToneWindowed(pitch, whenSec, playSec, fadeOutSec, gain = 0.65) {
+    const ctx = ensureAudioGraph();
+    if (!ctx || !masterGain) return null;
+
+    const osc = ctx.createOscillator();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(pitchToFrequency(pitch), whenSec);
+
+    const g = ctx.createGain();
+    const safeGain = Math.max(0, Number.isFinite(gain) ? gain : 0.65);
+    const fadeIn = 0.01;
+    const endAt = whenSec + Math.max(0.05, playSec);
+
+    g.gain.setValueAtTime(0, whenSec);
+    g.gain.linearRampToValueAtTime(safeGain, whenSec + fadeIn);
+
+    const fade = Math.max(0.015, Number.isFinite(fadeOutSec) ? fadeOutSec : 0.06);
+    const fadeStart = Math.max(whenSec + 0.02, endAt - fade);
+    g.gain.setValueAtTime(safeGain, fadeStart);
+    g.gain.linearRampToValueAtTime(0, endAt);
+
+    osc.connect(g);
+    g.connect(masterGain);
+
+    trackVoice(osc, g, whenSec);
+    osc.start(whenSec);
+    osc.stop(endAt + 0.03);
+    return osc;
+  }
+
+  function maybeWarnSynthFallback(missingUrl) {
+    if (synthFallbackWarned) return;
+    synthFallbackWarned = true;
+    console.warn("Audio sample missing; using synthesized tones instead:", missingUrl);
+    setFeedback(`Audio samples not found; using synthesized tones.<br/><small>Missing: <code>${missingUrl}</code></small>`);
+  }
+
+  function stopAllUiSounds() {
+    for (const a of Array.from(activeUiAudios)) {
+      try { a.pause(); a.currentTime = 0; } catch {}
+      activeUiAudios.delete(a);
+    }
+  }
+
+  async function playUiSound(filename) {
+    try {
+      const url = `${AUDIO_DIR}/${filename}`;
+      const buffer = await loadBuffer(url);
+      if (!buffer) return;
+      const ctx = ensureAudioGraph();
+      if (!ctx) return;
+      
+      const when = ctx.currentTime;
+      const src = ctx.createBufferSource();
+      src.buffer = buffer;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(2.0, when);
+
+      src.connect(g);
+      g.connect(masterGain);
+      trackVoice(src, g, when);
+      src.start(when);
+    } catch (e) { console.error("UI Sound error:", e); }
+  }
+
   function pitchLabel(pitch) {
     const pc = pcFromPitch(pitch);
     const oct = octFromPitch(pitch);
@@ -394,8 +437,9 @@
     const url = noteUrl(stem, oct);
     const buf = await loadBuffer(url);
     if (!buf) {
-      setFeedback(`Missing audio: <code>${url}</code>`);
-      return false;
+      maybeWarnSynthFallback(url);
+      playSynthToneWindowed(pitch, whenSec, playSec, fadeOutSec, gain * 0.7);
+      return true;
     }
 
     playBufferWindowed(buf, whenSec, playSec, fadeOutSec, gain);
@@ -421,7 +465,7 @@
   }
 
   function currentMode() {
-    return RANGES[noteRangeSel.value] || RANGES["expert-4oct"];
+    return RANGES[currentModeKey] || RANGES["easy-1oct"];
   }
 
   function modeLabel() {
@@ -482,6 +526,12 @@
     return Math.max(score.longestStored, score.streak);
   }
 
+  function updateScoreMetaText() {
+    const metaText = `Game mode: ${modeLabel()}`;
+    if (scoreMeta) scoreMeta.textContent = metaText;
+    if (modalScoreMeta) modalScoreMeta.textContent = metaText;
+  }
+
   function renderScore() {
     const items = [
       ["Questions asked", score.asked],
@@ -491,12 +541,11 @@
       ["Percentage correct", `${scorePercent()}%`],
     ];
 
-    scoreOut.innerHTML =
-      `<div class="scoreGrid scoreGridVertical">` +
-      items.map(([k, v]) =>
+    scoreOut.innerHTML = items.map(([k, v]) =>
         `<div class="scoreItem"><span class="scoreK">${k}</span><span class="scoreV">${v}</span></div>`
-      ).join("") +
-      `</div>`;
+    ).join("");
+    
+    updateScoreMetaText();
   }
 
   function setFeedback(html) {
@@ -517,8 +566,10 @@
   }
 
   function updateBeginButton() {
-    beginBtn.textContent = started ? "Restart Game" : "Begin Game";
+    beginBtn.textContent = started ? "End / Restart Game" : "Begin Game";
     beginBtn.classList.toggle("pulse", !started);
+    beginBtn.classList.toggle("primary", !started);
+    beginBtn.classList.toggle("isRestart", started);
   }
 
   // ---------------- mini keyboard ----------------
@@ -766,23 +817,54 @@
     await playPair({ allowAnswerAfter: true });
   }
 
-  function showPopup(title, message, { showDownload = false } = {}) {
-    if (!streakModal || !modalTitle || !modalBody || !modalDownload || !modalClose) return;
-    modalTitle.textContent = title;
-    modalBody.textContent = message;
-    modalDownload.classList.toggle("hidden", !showDownload);
-    streakModal.classList.remove("hidden");
-    modalClose.focus();
+  // ---------------- modals ----------------
+  let lastFocusEl = null;
+
+  function openModal(modalEl) {
+    lastFocusEl = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    modalEl.classList.remove("hidden");
+    postHeightNow();
   }
 
-  function hidePopup() {
-    streakModal?.classList.add("hidden");
+  function closeModal(modalEl) {
+    modalEl.classList.add("hidden");
+    postHeightNow();
+    if (lastFocusEl) {
+      try { lastFocusEl.focus(); } catch {}
+    }
+  }
+
+  function isVisible(modalEl) { return !modalEl.classList.contains("hidden"); }
+
+  function showRecordPopup(title, message, { showDownload = false } = {}) {
+    if (!streakModal || !modalTitleRecord || !modalBodyRecord || !modalDownloadRecord || !modalCloseRecord) return;
+    modalTitleRecord.textContent = title;
+    modalBodyRecord.textContent = message;
+    modalDownloadRecord.classList.toggle("hidden", !showDownload);
+    openModal(streakModal);
+    modalCloseRecord.focus();
+  }
+
+  let scoreModalContinueCallback = null;
+  function showScoreModal(onContinue) {
+    scoreModalContinueCallback = onContinue;
+    
+    // update specific modal score fields
+    if ($("modalAsked")) $("modalAsked").textContent = score.asked;
+    if ($("modalCorrect")) $("modalCorrect").textContent = score.correct;
+    if ($("modalStreak")) $("modalStreak").textContent = score.streak;
+    if ($("modalLongest")) $("modalLongest").textContent = displayLongest();
+    if ($("modalPercent")) $("modalPercent").textContent = `${scorePercent()}%`;
+    
+    updateScoreMetaText();
+    openModal(scoreModal);
+    try { scoreModalContinueBtn.focus(); } catch {}
   }
 
   function considerStreakForLongestOnFail(prevStreak) {
     if (prevStreak > score.longestStored) {
       score.longestStored = prevStreak;
-      showPopup(
+      showRecordPopup(
         "New Longest Streak!",
         `New Longest Streak! That's ${prevStreak} correct in a row!`,
         { showDownload: true }
@@ -804,7 +886,10 @@
     const correct = expectedAnswer(note1, note2);
     const isCorrect = choice === correct;
 
+    stopAllUiSounds();
+
     if (isCorrect) {
+      setTimeout(() => playUiSound(UI_SND_CORRECT), 20);
       score.correct += 1;
       score.streak += 1;
       renderScore();
@@ -813,6 +898,7 @@
         `First: <strong>${pitchLabel(note1)}</strong> &nbsp;→&nbsp; Second: <strong>${pitchLabel(note2)}</strong>.`
       );
     } else {
+      playUiSound(UI_SND_INCORRECT);
       const prev = score.streak;
       score.streak = 0;
       considerStreakForLongestOnFail(prev);
@@ -831,11 +917,13 @@
   async function goNext() {
     if (!started || !awaitingNext) return;
     setFeedback("");
+    stopAllUiSounds();
     await startNewRound({ autoplay: true });
   }
 
-  function resetToLoadingScreen() {
+  function resetToLoadingScreen({ openIntro = false } = {}) {
     stopAllNotes(0.08);
+    stopAllUiSounds();
 
     started = false;
     awaitingNext = false;
@@ -851,17 +939,22 @@
 
     renderScore();
     updateBeginButton();
-    setSubtitleVisible(true);
     buildMiniKeyboard(null, null);
+    
     setFeedback("Press <strong>Begin Game</strong> to start.");
     updateControls();
+    
+    if (openIntro) {
+      openModal(introModal);
+      try { introBeginBtn.focus(); } catch {}
+    }
   }
 
   async function beginGame() {
     await resumeAudioIfNeeded();
+    stopAllUiSounds();
 
     started = true;
-    setSubtitleVisible(false);
     updateBeginButton();
 
     score.asked = 0;
@@ -873,36 +966,229 @@
     await startNewRound({ autoplay: true });
   }
 
+  // Settings syncing logic
+  function isSettingsDirty() {
+    return settingsRangeSelect.value !== currentModeKey;
+  }
+  
+  function updateSettingsDirtyUi() {
+    const dirty = isSettingsDirty();
+    settingsRestartBtn.disabled = !dirty;
+    settingsRestartBtn.classList.toggle("is-disabled", !dirty);
+  }
+  
+  function applyRangeMode(newRange) {
+    currentModeKey = newRange;
+    computePitchBounds();
+    updateScoreMetaText();
+  }
+
+  // Name input sync
+  function loadInitialName() {
+    const saved = localStorage.getItem(LS_KEY_NAME);
+    const v = String(saved || "").trim();
+    return v.slice(0, 32);
+  }
+
+  function saveName(name) { try { localStorage.setItem(LS_KEY_NAME, String(name || "").trim().slice(0, 32)); } catch {} }
+
+  function syncNames(val) {
+    if (playerNameInput && playerNameInput.value !== val) playerNameInput.value = val;
+    if (modalPlayerNameInput && modalPlayerNameInput.value !== val) modalPlayerNameInput.value = val;
+  }
+  if (playerNameInput) playerNameInput.addEventListener("input", (e) => syncNames(e.target.value));
+  if (modalPlayerNameInput) modalPlayerNameInput.addEventListener("input", (e) => syncNames(e.target.value));
+
   // ---------------- downloads ----------------
-  function downloadBlob(blob, filename) {
-    const a = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 3000);
+  async function loadImage(src) {
+    return await new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => resolve(null);
+      img.src = src;
+    });
+  }
+  
+  function drawImageContain(ctx, img, x, y, w, h) {
+    const iw = img.naturalWidth || img.width || 1;
+    const ih = img.naturalHeight || img.height || 1;
+    const r = Math.min(w / iw, h / ih);
+    const dw = Math.max(1, iw * r);
+    const dh = Math.max(1, ih * r);
+    const dx = x + (w - dw) / 2;
+    const dy = y + (h - dh) / 2;
+    ctx.drawImage(img, dx, dy, dw, dh);
+    return { w: dw, h: dh, x: dx, y: dy };
   }
 
-  function canvasToPngBlob(canvas) {
-    return new Promise((resolve) => canvas.toBlob((b) => resolve(b), "image/png"));
+  function drawRoundRect(ctx, x, y, w, h, r) {
+    const rr = Math.max(0, Math.min(r, Math.min(w, h) / 2));
+    ctx.beginPath();
+    ctx.moveTo(x + rr, y);
+    ctx.arcTo(x + w, y, x + w, y + h, rr);
+    ctx.arcTo(x + w, y + h, x, y + h, rr);
+    ctx.arcTo(x, y + h, x, y, rr);
+    ctx.arcTo(x, y, x + w, y, rr);
+    ctx.closePath();
   }
 
-  function drawCardBase(ctx, w, h) {
+  function sanitizeFilenamePart(s) {
+    const v = String(s || "").trim().replace(/\s+/g, "_");
+    const cleaned = v.replace(/[^a-zA-Z0-9_\-]+/g, "");
+    return cleaned.slice(0, 32) || "";
+  }
+  
+  function safeText(s) { return String(s || "").replace(/[\u0000-\u001f\u007f]/g, "").trim(); }
+
+  async function downloadScorecardPng(nameInputEl) {
+    const LAYOUT = {
+      gapAfterImage: 32,           
+      gapAfterUrl: 36,             
+      gapAfterTitle: 30,           
+      gapAfterMeta: 28,            
+      gapAfterName: 22,            
+      gapNoNameCompensation: 12,   
+      mainGridRowGap: 14,          
+    };
+
+    const name = safeText(nameInputEl?.value);
+    if (nameInputEl) saveName(name);
+
+    const W = 720;
+    const rowsCount = 5;
+    const rowH = 58;
+    const baseContentH = 340; 
+    const H = baseContentH + (rowsCount * (rowH + LAYOUT.mainGridRowGap)) + 80; 
+    
+    const dpr = Math.max(1, Math.floor((window.devicePixelRatio || 1) * 100) / 100);
+
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.scale(dpr, dpr);
+
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, W, H);
+
+    const pad = 34;
+    const cardX = pad;
+    const cardY = pad;
+    const cardW = W - pad * 2;
+    const cardH = H - pad * 2;
+
+    ctx.fillStyle = "#f9f9f9";
+    drawRoundRect(ctx, cardX, cardY, cardW, cardH, 18);
+    ctx.fill();
+
+    ctx.strokeStyle = "rgba(0,0,0,0.18)";
+    ctx.lineWidth = 1;
+    drawRoundRect(ctx, cardX, cardY, cardW, cardH, 18);
+    ctx.stroke();
+
+    const titleSrc = titleImgWide?.getAttribute("src") || "images/title.png";
+    const titleImg = await loadImage(titleSrc);
+
+    let yCursor = cardY + 26;
+
+    if (titleImg) {
+      const imgMaxW = Math.min(520, cardW - 40);
+      const imgMaxH = 92;
+      drawImageContain(ctx, titleImg, (W - imgMaxW) / 2, yCursor, imgMaxW, imgMaxH);
+      yCursor += imgMaxH + LAYOUT.gapAfterImage;
+    }
+
+    ctx.fillStyle = "rgba(0,0,0,0.6)";
+    ctx.font = "800 18px Arial, Helvetica, sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("www.eartraininglab.com", W / 2, yCursor);
+    yCursor += LAYOUT.gapAfterUrl;
+
+    ctx.fillStyle = "#111";
+    ctx.textAlign = "center";
+    ctx.font = "700 26px Arial, Helvetica, sans-serif";
+    ctx.fillText("Score Card", W / 2, yCursor);
+    yCursor += LAYOUT.gapAfterTitle;
+
+    ctx.font = "800 18px Arial, Helvetica, sans-serif";
+    ctx.fillStyle = "rgba(0,0,0,0.70)";
+    ctx.fillText(`Game mode: ${modeLabel()}`, W / 2, yCursor);
+    yCursor += LAYOUT.gapAfterMeta;
+
+    if (name) {
+      ctx.fillText(`Name: ${name}`, W / 2, yCursor);
+      yCursor += LAYOUT.gapAfterName;
+    } else {
+      yCursor += LAYOUT.gapNoNameCompensation; 
+    }
+
+    ctx.fillStyle = "#111";
+    ctx.textAlign = "left";
+
+    const rowX = cardX + 26;
+    const rowW = cardW - 52;
+    
+    const rows = [
+      ["Questions asked", String(score.asked)],
+      ["Answers correct", String(score.correct)],
+      ["Correct in a row", String(score.streak)],
+      ["Longest correct streak", String(displayLongest())],
+      ["Percentage correct", `${scorePercent()}%`],
+    ];
+
+    for (const [k, v] of rows) {
+      ctx.fillStyle = "#ffffff";
+      drawRoundRect(ctx, rowX, yCursor, rowW, rowH, 14);
+      ctx.fill();
+      ctx.strokeStyle = "rgba(0,0,0,0.16)";
+      ctx.stroke();
+
+      ctx.fillStyle = "rgba(0,0,0,0.70)";
+      ctx.font = "900 18px Arial, Helvetica, sans-serif";
+      ctx.fillText(k, rowX + 16, yCursor + 33);
+
+      ctx.fillStyle = "#111";
+      ctx.font = "900 22px Arial, Helvetica, sans-serif";
+      ctx.textAlign = "right";
+      ctx.fillText(v, rowX + rowW - 16, yCursor + 37);
+      ctx.textAlign = "left";
+
+      yCursor += rowH + LAYOUT.mainGridRowGap;
+    }
+
+    ctx.textAlign = "center";
+    ctx.font = "800 14px Arial, Helvetica, sans-serif";
+    ctx.fillStyle = "rgba(0,0,0,0.55)";
+    ctx.fillText("Higher Or Lower?! - www.eartraininglab.com", W / 2, cardY + cardH - 24);
+
+    const fileBase = name ? `${sanitizeFilenamePart(name)}_scorecard` : "scorecard";
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${fileBase}.png`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }, "image/png");
+  }
+
+  function drawCardBaseOld(ctx, w, h) {
     ctx.clearRect(0, 0, w, h);
     ctx.fillStyle = "#fbfbfc";
     ctx.fillRect(0, 0, w, h);
-
     ctx.strokeStyle = "rgba(0,0,0,0.12)";
     ctx.lineWidth = 6;
     ctx.strokeRect(8, 8, w - 16, h - 16);
-
     ctx.fillStyle = "#111";
     ctx.fillRect(8, 8, w - 16, 74);
   }
 
-  function drawWrappedText(ctx, text, x, y, maxWidth, lineHeight) {
+  function drawWrappedTextOld(ctx, text, x, y, maxWidth, lineHeight) {
     const words = String(text).split(/\s+/);
     let line = "";
     for (const word of words) {
@@ -918,62 +1204,6 @@
     if (line) ctx.fillText(line, x, y);
   }
 
-  function getPlayerName() {
-    const prev = localStorage.getItem("hol_player_name") || "";
-    const name = window.prompt("Enter your name for the score card:", prev) ?? "";
-    const trimmed = String(name).trim();
-    if (trimmed) localStorage.setItem("hol_player_name", trimmed);
-    return trimmed || "Player";
-  }
-
-  async function downloadScoreCardPng(playerName) {
-    const w = 560;
-    const h = 520;
-    const canvas = document.createElement("canvas");
-    canvas.width = w;
-    canvas.height = h;
-
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    drawCardBase(ctx, w, h);
-
-    ctx.fillStyle = "#fff";
-    ctx.font = "900 30px Arial";
-    ctx.fillText("Higher Or Lower?! — Scorecard", 28, 56);
-
-    const bodyX = 28;
-    const bodyY = 130;
-
-    ctx.fillStyle = "#111";
-    ctx.font = "900 22px Arial";
-    ctx.fillText("Summary", bodyX, bodyY);
-
-    ctx.font = "700 20px Arial";
-    const lines = [
-      `Name: ${playerName}`,
-      `Game mode: ${modeLabel()}`,
-      `Questions asked: ${score.asked}`,
-      `Answers correct: ${score.correct}`,
-      `Correct in a row: ${score.streak}`,
-      `Longest correct streak: ${displayLongest()}`,
-      `Percentage correct: ${scorePercent()}%`,
-    ];
-
-    let y = bodyY + 44;
-    for (const ln of lines) {
-      ctx.fillText(ln, bodyX, y);
-      y += 34;
-    }
-
-    ctx.fillStyle = "rgba(0,0,0,0.65)";
-    ctx.font = "700 16px Arial";
-    ctx.fillText("Downloaded from www.eartraininglab.com 🎶", bodyX, h - 36);
-
-    const blob = await canvasToPngBlob(canvas);
-    if (blob) downloadBlob(blob, "Higher Or Lower Scorecard.png");
-  }
-
   async function downloadRecordPng(streakValue, playerName) {
     const w = 980;
     const h = 420;
@@ -984,7 +1214,7 @@
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    drawCardBase(ctx, w, h);
+    drawCardBaseOld(ctx, w, h);
 
     ctx.fillStyle = "#fff";
     ctx.font = "900 30px Arial";
@@ -997,32 +1227,92 @@
     ctx.font = "700 22px Arial";
     ctx.fillStyle = "#111";
     const msg = `${playerName} just scored ${streakValue} correct answers in a row on the Higher Or Lower?! game 🎉🎶🥳`;
-    drawWrappedText(ctx, msg, 28, 200, w - 56, 34);
+    drawWrappedTextOld(ctx, msg, 28, 200, w - 56, 34);
 
     ctx.fillStyle = "rgba(0,0,0,0.65)";
     ctx.font = "700 16px Arial";
     ctx.fillText("Downloaded from www.eartraininglab.com 🎶", 28, h - 36);
 
-    const blob = await canvasToPngBlob(canvas);
-    if (blob) downloadBlob(blob, "Higher Or Lower Record.png");
-  }
-
-  async function onDownloadScoreCard() {
-    const name = getPlayerName();
-    await downloadScoreCardPng(name);
-  }
-
-  async function onDownloadRecord() {
-    const name = getPlayerName();
-    const v = score.longestStored || displayLongest();
-    await downloadRecordPng(v, name);
+    canvas.toBlob((blob) => {
+        if (!blob) return;
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "Higher Or Lower Record.png";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }, "image/png");
   }
 
   // ---------------- events ----------------
   function bind() {
+    
+    // Intro modal
+    function handleIntroContinue() {
+      playUiSound(UI_SND_SELECT);
+      const newRange = String(introRangeSelect.value || "easy-1oct");
+      applyRangeMode(newRange);
+      if (settingsRangeSelect) settingsRangeSelect.value = newRange;
+      
+      closeModal(introModal);
+      setFeedback("Press <strong>Begin Game</strong> to start.");
+      try { beginBtn.focus(); } catch {}
+    }
+    introBeginBtn.addEventListener("click", handleIntroContinue);
+    
+    // Settings modal
+    settingsBtn.addEventListener("click", () => {
+        playUiSound(UI_SND_SELECT);
+        stopAllNotes(0.06);
+        if (settingsRangeSelect) settingsRangeSelect.value = currentModeKey;
+        openModal(settingsModal);
+        updateSettingsDirtyUi();
+        try { settingsRangeSelect.focus(); } catch {}
+    });
+    
+    settingsCancelBtn.addEventListener("click", () => {
+        playUiSound(UI_SND_BACK);
+        if (settingsRangeSelect) settingsRangeSelect.value = currentModeKey;
+        updateSettingsDirtyUi();
+        closeModal(settingsModal);
+    });
+    
+    settingsRangeSelect.addEventListener("change", updateSettingsDirtyUi);
+    
+    settingsRestartBtn.addEventListener("click", () => {
+      if (settingsRestartBtn.disabled) return;
+      playUiSound(UI_SND_SELECT);
+      const newRange = String(settingsRangeSelect.value || "easy-1oct");
+      
+      closeModal(settingsModal);
+
+      showScoreModal(() => {
+        applyRangeMode(newRange);
+        if (introRangeSelect) introRangeSelect.value = newRange;
+        resetToLoadingScreen({ openIntro: false });
+      });
+    });
+
+    // Score modal
+    scoreModalContinueBtn.addEventListener("click", () => {
+      playUiSound(UI_SND_SELECT);
+      closeModal(scoreModal);
+      if (scoreModalContinueCallback) scoreModalContinueCallback();
+    });
+
+    // Main buttons
     beginBtn.addEventListener("click", async () => {
-      if (!started) await beginGame();
-      else resetToLoadingScreen();
+      if (!started) {
+        if (introModal && !introModal.classList.contains("hidden")) closeModal(introModal);
+        await beginGame();
+        return;
+      }
+      
+      showScoreModal(() => {
+        resetToLoadingScreen({ openIntro: true });
+      });
     });
 
     replayBtn.addEventListener("click", replay);
@@ -1032,25 +1322,69 @@
     lowerBtn.addEventListener("click", () => answer("lower"));
 
     nextBtn.addEventListener("click", goNext);
-    downloadScoreBtn.addEventListener("click", onDownloadScoreCard);
+    
+    // Downloads
+    downloadScoreBtn.addEventListener("click", () => {
+      playUiSound(UI_SND_SELECT);
+      downloadScorecardPng(playerNameInput);
+    });
+    modalDownloadScorecardBtn.addEventListener("click", () => {
+      playUiSound(UI_SND_SELECT);
+      downloadScorecardPng(modalPlayerNameInput);
+    });
+    
+    modalDownloadRecord.addEventListener("click", () => {
+        const name = safeText(playerNameInput.value) || "Player";
+        downloadRecordPng(score.longestStored || displayLongest(), name);
+    });
 
-    modalClose?.addEventListener("click", hidePopup);
-    streakModal?.addEventListener("click", (e) => { if (e.target === streakModal) hidePopup(); });
-    modalDownload?.addEventListener("click", onDownloadRecord);
-
-    noteRangeSel.addEventListener("change", () => {
-      autoSizeSelectToContent(noteRangeSel);
-      computePitchBounds();
-      buildMiniKeyboard(null, null);
-      if (started) startNewRound({ autoplay: true });
+    // Modals closing overrides
+    modalCloseRecord?.addEventListener("click", () => {
+        playUiSound(UI_SND_BACK);
+        closeModal(streakModal);
+    });
+    streakModal?.addEventListener("click", (e) => { 
+        if (e.target === streakModal) {
+            playUiSound(UI_SND_BACK);
+            closeModal(streakModal); 
+        }
+    });
+    introModal?.addEventListener("click", (e) => { 
+        if (e.target === introModal) {
+            playUiSound(UI_SND_BACK);
+            closeModal(introModal); 
+        }
+    });
+    settingsModal?.addEventListener("click", (e) => { 
+        if (e.target === settingsModal) {
+            playUiSound(UI_SND_BACK);
+            if (settingsRangeSelect) settingsRangeSelect.value = currentModeKey;
+            closeModal(settingsModal);
+        }
     });
 
     window.addEventListener("resize", () => {
-      autoSizeSelectToContent(noteRangeSel);
       updateTitleForWidth();
     });
 
     document.addEventListener("keydown", async (e) => {
+      if (e.key === "Escape") {
+        if (isVisible(settingsModal)) {
+          playUiSound(UI_SND_BACK);
+          if (settingsRangeSelect) settingsRangeSelect.value = currentModeKey;
+          closeModal(settingsModal);
+          return;
+        }
+        if (isVisible(streakModal)) { 
+          playUiSound(UI_SND_BACK);
+          closeModal(streakModal); 
+          return; 
+        }
+        return;
+      }
+
+      if (isVisible(settingsModal) || isVisible(introModal) || isVisible(scoreModal) || isVisible(streakModal)) return;
+
       if (!started) return;
 
       if (e.code === "KeyR") {
@@ -1088,17 +1422,21 @@
     bind();
     initTitleSwap();
 
-    computePitchBounds();
+    const initialName = loadInitialName();
+    if (playerNameInput) playerNameInput.value = initialName;
+    if (modalPlayerNameInput) modalPlayerNameInput.value = initialName;
+
+    applyRangeMode("easy-1oct");
     renderScore();
     updateBeginButton();
     buildMiniKeyboard(null, null);
 
     setFeedback("Press <strong>Begin Game</strong> to start.");
-    setSubtitleVisible(true);
-
     updateControls();
-    autoSizeSelectToContent(noteRangeSel);
     updateTitleForWidth();
+
+    openModal(introModal);
+    try { introBeginBtn.focus(); } catch {}
   }
 
   init();
