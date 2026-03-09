@@ -283,20 +283,11 @@ button:disabled{
 }
 
 /* Modals */
-.modal{
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.45);
-  display:flex;
-  align-items:flex-start;
-  justify-content:center;
-  padding-top: 100px;
-  padding-left:10px;
-  padding-right: 10px;
-  z-index:50;
-  overflow:auto;
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
+.modal {
+  position: fixed; inset: 0; background: rgba(0,0,0,.45);
+  display: flex; align-items: flex-start; justify-content: center;
+  padding-top: 60px; padding-left: 10px; padding-right: 10px;
+  z-index: 50; overflow: auto;
 }
 .modal.hidden{display:none}
 .modalCard{
